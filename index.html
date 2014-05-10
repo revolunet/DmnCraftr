@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+        <link href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+        <style>
+        .jumbotron {
+            margin-top:10px;
+            padding:30px;
+        }
+        .btn-craft {
+            margin-left:5px;
+        }
+        .alert-craft {
+            margin-top:20px;
+        }
+        input[type='number'] {
+            width:60px;
+            text-align:center;
+        }
+        .checkbox-craft {
+            display:inline-block;
+            width:100px;
+        }
+        input.exclude {
+            width:150px;
+        }
+        .ng-cloak {
+            display:none;
+        }
+        </style>
+    </head>
+    <body ng-app="DomainFinder" >
+        <div ng-controller="MainCtrl" class="container ng-cloak">
+
+            <div class="jumbotron">
+                <h1>DmnCraftr</h1>
+                Craft your very own hipster domain name using <b>{{ finder.db.length }}</b> english words.
+            </div>
+
+            <form class="form-horizontal" role="form">
+                <div class="form-group">
+                    <div class="col-sm-3 text-right">
+                        <label class="control-label">Extensions: </label>
+                        <br>
+                        <a ng-click="razExtensions(true)">all</a> - <a ng-click="razExtensions(false)">none</a>
+                    </div>
+                    <div class="col-sm-9">
+                         <span class="checkbox checkbox-craft" ng-repeat="ext in availableExtensions">
+                            <label>
+                              <input type="checkbox" ng-model="extensions[ext]"> .{{ ext }}
+                            </label>
+                          </span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label">Letters to remove (left part) : </label>
+                    <div class="col-sm-9">
+                        <input class="form-control exclude" type="text" ng-model="excludeLetters">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label">Min chars (left part) : </label>
+                    <div class="col-sm-9">
+                        <input class="form-control" type="number" ng-model="minChars">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label">Max chars (left part) : </label>
+                    <div class="col-sm-9">
+                        <input class="form-control" type="number" ng-model="maxChars">
+                    </div>
+                </div>
+                <div class="col-sm-offset-3">
+                    <button class="btn btn-primary btn-lg btn-craft" ng-click="find()" ng-disabled="wait">{{ action }}</button>
+                </div>
+            </form>
+
+            <div class="alert alert-danger alert-craft" ng-if="results.length==0">Can't craft any domain name !</div>
+
+            <ul ng-if="results.length > 0">
+                <b>{{ results.length }} unique results :</b><br>
+                <li ng-repeat="result in results track by $index">{{ result }}</li>
+            </ul>
+        </div>
+
+        <script src="//code.angularjs.org/1.2.9/angular.min.js"></script>
+        <script>
+
+        angular.module('DomainFinder', [])
+
+        .service('Finder', function($http) {
+            $http.get('dict.json').then(function(response) {
+                api.db = response.data;
+            });
+
+            var api = {
+                db: [],
+                find: function(re) {
+                    return api.db.filter(function(word) {
+                        return re.test(word);
+                    })
+                }
+            }
+            return api;
+        })
+        .controller('MainCtrl', function($scope, $timeout, Finder) {
+
+            // build extensions
+            $scope.availableExtensions = ['af', 'ag', 'am', 'asia', 'at', 'be', 'bz', 'ca', 'cat', 'cc', 'ch', 'cn', 'co', 'cx', 'de', 'dk', 'es', 'eu', 'fi', 'fm', 'fr', 'gd', 'gg', 'gr', 'gs', 'gy', 'hk', 'hn', 'ht', 'im', 'in', 'io', 'it', 'je', 'jp', 'ki', 'la', 'lc', 'li', 'lt', 'lu', 'lv', 'me', 'mg', 'mn', 'ms', 'mu', 'mx', 'nf', 'nl', 'no', 'nu', 'nz', 'pe', 'ph', 'pl', 'pm', 'pt', 'pw', 're', 'ro', 'ru', 'sb', 'sc', 'se', 'so', 'sx', 'tc', 'tf', 'tl', 'tv', 'tw', 'us', 'vc', 'vg', 'wf', 'ws', 'yt', 'za', 'net', 'com'];
+            $scope.availableExtensions.sort();
+
+            $scope.razExtensions = function(selected) {
+                $scope.extensions = {};
+                angular.forEach($scope.availableExtensions, function(ext) {
+                    $scope.extensions[ext] = selected;
+                });
+            }
+            $scope.razExtensions(false);
+
+            var defaultExtensions = ['fr', 'io', 'am', 'lu', 'se', 'us', 'me', 're', 'co', 'ro', 'la', 'be', 'li', 'ca'];
+
+            // activate some
+            angular.forEach(defaultExtensions, function(ext) {
+                $scope.extensions[ext] = true;
+            });
+
+            $scope.finder = Finder
+            $scope.excludeLetters = 'aei';
+            $scope.minChars = 3;
+            $scope.maxChars = 8;
+            $scope.results = null;
+
+            var defaultAction = 'Craft my domains NOW !';
+            $scope.wait = false;
+            $scope.action = defaultAction;
+
+            function splitforRegExp(str, splitter) {
+                return str.split(splitter).map(function(ext) {return ext.trim();}).join('|');
+            }
+
+            $scope.find = function() {
+                $scope.wait = true;
+                $scope.action = 'Crafting in progress...';
+                $timeout(launchFind, 0);
+            }
+
+            function launchFind() {
+                var selectedExtensions = [];
+                angular.forEach($scope.extensions, function(selected, ext) {
+                    if (selected) {
+                        selectedExtensions.push(ext);
+                    }
+                });
+                var reg = new RegExp( '(.*)(' + selectedExtensions.join('|') + ')' + '$', 'i');
+                console.log('reg', reg);
+                //return;
+                var results = Finder.find(reg).map(function(result) {
+                    return result
+                        // build domain name
+                        .replace(reg, function(match, p1, p2) {
+                            // filter by size
+                            var left = p1.replace(new RegExp(splitforRegExp($scope.excludeLetters, ''), 'ig'), '');
+                            if (left.length < $scope.minChars || left.length > $scope.maxChars) {
+                                return null;
+                            }
+                            return  left + '.' + p2 +  ' (' + match + ')';
+                        })
+                }).filter(function(word) {
+                    return word!==null;
+                });
+                // remove dups
+                $scope.results = results.filter(function(elem, pos, self) {
+                    return self.indexOf(elem) == pos;
+                })
+                // sort
+                $scope.results.sort();
+
+                $scope.wait = false;
+                $scope.action = defaultAction;
+            }
+
+        });
+
+        </script>
+
+
+    <body>
+</html>
