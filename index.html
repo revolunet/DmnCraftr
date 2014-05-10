@@ -80,14 +80,15 @@
 
             <ul ng-if="results.length > 0">
                 <b>{{ results.length }} unique results :</b><br>
-                <li ng-repeat="result in results track by $index">{{ result }}</li>
+                <li ng-repeat="result in results track by $index" ng-bind-html="result"></li>
             </ul>
         </div>
 
         <script src="//code.angularjs.org/1.2.9/angular.min.js"></script>
+        <script src="//code.angularjs.org/1.2.9/angular-sanitize.min.js"></script>
         <script>
 
-        angular.module('DomainFinder', [])
+        angular.module('DomainFinder', ['ngSanitize'])
 
         .service('Finder', function($http) {
             $http.get('dict.json').then(function(response) {
@@ -142,7 +143,7 @@
             $scope.find = function() {
                 $scope.wait = true;
                 $scope.action = 'Crafting in progress...';
-                $timeout(launchFind, 0);
+                $timeout(launchFind, 10);
             }
 
             function launchFind() {
@@ -164,7 +165,7 @@
                             if (left.length < $scope.minChars || left.length > $scope.maxChars) {
                                 return null;
                             }
-                            return  left + '.' + p2 +  ' (' + match + ')';
+                            return  left + '.' + p2 +  ' (' + match + ') - ' + '<a href="https://www.gandi.net/whois/details?search=' + left + '.' + p2 + '" target="_blank">gandi</a>';
                         })
                 }).filter(function(word) {
                     return word!==null;
