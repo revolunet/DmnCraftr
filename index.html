@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <!-- 
         <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
         <link href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+         -->
+         <link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
         <style>
         .jumbotron {
             margin-top:10px;
@@ -54,9 +57,15 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="col-sm-3 control-label">Letters to remove (left part) : </label>
+                    <label class="col-sm-3 control-label">Stripped Letters (left part) : </label>
                     <div class="col-sm-9">
-                        <input class="form-control exclude" type="text" ng-model="excludeLetters">
+                        <input class="form-control exclude" type="text" ng-model="lettersToStrip">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-3 control-label">Forbidden letters (left part) : </label>
+                    <div class="col-sm-9">
+                        <input class="form-control exclude" type="text" ng-model="excludedLetters">
                     </div>
                 </div>
                 <div class="form-group">
@@ -84,8 +93,8 @@
             </ul>
         </div>
 
-        <script src="//code.angularjs.org/1.2.9/angular.min.js"></script>
-        <script src="//code.angularjs.org/1.2.9/angular-sanitize.min.js"></script>
+        <script src="angular.js"></script>
+        <script src="angular-sanitize.min.js"></script>
         <script>
 
         angular.module('DomainFinder', ['ngSanitize'])
@@ -127,7 +136,8 @@
             });
 
             $scope.finder = Finder
-            $scope.excludeLetters = 'aei';
+            $scope.lettersToStrip = 'e';
+            $scope.excludedLetters = 'aiouy';
             $scope.minChars = 3;
             $scope.maxChars = 8;
             $scope.results = null;
@@ -153,22 +163,35 @@
                         selectedExtensions.push(ext);
                     }
                 });
+                var excludedLetters = $scope.excludedLetters.split('');
+
                 var reg = new RegExp( '(.*)(' + selectedExtensions.join('|') + ')' + '$', 'i');
-                console.log('reg', reg);
+                //console.log('reg', reg, excludedLetters);
                 //return;
-                var results = Finder.find(reg).map(function(result) {
+                var results = Finder.find(reg)
+                    .map(function(result) {
                     return result
                         // build domain name
                         .replace(reg, function(match, p1, p2) {
                             // filter by size
-                            var left = p1.replace(new RegExp(splitforRegExp($scope.excludeLetters, ''), 'ig'), '');
+                            //console.log(arguments);
+                            var left = p1.replace(new RegExp(splitforRegExp($scope.lettersToStrip, ''), 'ig'), '');
                             if (left.length < $scope.minChars || left.length > $scope.maxChars) {
-                                return null;
+                                return '';
+                            }
+                            var exclude = false;
+                            angular.forEach(excludedLetters, function(letter, idx) {
+                                if (left.toUpperCase().indexOf(letter.toUpperCase()) > -1) {
+                                    exclude = true;
+                                }
+                            });
+                            if (exclude) {
+                                return '';
                             }
                             return  left + '.' + p2 +  ' (' + match + ') - ' + '<a href="https://www.gandi.net/whois/details?search=' + left + '.' + p2 + '" target="_blank">gandi</a>';
                         })
                 }).filter(function(word) {
-                    return word!==null;
+                    return word!=='';
                 });
                 // remove dups
                 $scope.results = results.filter(function(elem, pos, self) {
