@@ -22,8 +22,7 @@
             text-align:center;
         }
         .checkbox-craft {
-            display:inline-block;
-            width:100px;
+            
         }
         input.exclude {
             width:150px;
@@ -46,14 +45,27 @@
                     <div class="col-sm-3 text-right">
                         <label class="control-label">Extensions: </label>
                         <br>
+                        <!--
                         <a ng-click="razExtensions(true)">all</a> - <a ng-click="razExtensions(false)">none</a>
+                    -->
                     </div>
                     <div class="col-sm-9">
+                        <!--
                          <span class="checkbox checkbox-craft" ng-repeat="ext in availableExtensions">
                             <label>
                               <input type="checkbox" ng-model="extensions[ext]"> .{{ ext }}
                             </label>
                           </span>
+                        -->
+                        <div ng-repeat="key in extensionsOrder">
+                            <span class="checkbox checkbox-craft">
+                            <label>
+                              <input type="checkbox" ng-model="extensions[key]"><b>{{ key }}</b>
+                              : 
+                              <i>{{ defaultExtensions[key].join(' ') }}</i>
+                            </label>
+                          </span>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -117,23 +129,38 @@
         .controller('MainCtrl', function($scope, $timeout, Finder) {
 
             // build extensions
-            $scope.availableExtensions = ['af', 'ag', 'am', 'asia', 'at', 'be', 'bz', 'ca', 'cat', 'cc', 'ch', 'cn', 'co', 'cx', 'de', 'dk', 'es', 'eu', 'fi', 'fm', 'fr', 'gd', 'gg', 'gr', 'gs', 'gy', 'hk', 'hn', 'ht', 'im', 'in', 'io', 'it', 'je', 'jp', 'ki', 'la', 'lc', 'li', 'lt', 'lu', 'lv', 'me', 'mg', 'mn', 'ms', 'mu', 'mx', 'nf', 'nl', 'no', 'nu', 'nz', 'pe', 'ph', 'pl', 'pm', 'pt', 'pw', 're', 'ro', 'ru', 'sb', 'sc', 'se', 'so', 'sx', 'tc', 'tf', 'tl', 'tv', 'tw', 'us', 'vc', 'vg', 'wf', 'ws', 'yt', 'za', 'net', 'com'];
-            $scope.availableExtensions.sort();
+          //  $scope.availableExtensions = ['af', 'ag', 'am', 'asia', 'at', 'be', 'bz', 'ca', 'cat', 'cc', 'ch', 'cn', 'co', 'cx', 'de', 'dk', 'es', 'eu', 'fi', 'fm', 'fr', 'gd', 'gg', 'gr', 'gs', 'gy', 'hk', 'hn', 'ht', 'im', 'in', 'io', 'it', 'je', 'jp', 'ki', 'la', 'lc', 'li', 'lt', 'lu', 'lv', 'me', 'mg', 'mn', 'ms', 'mu', 'mx', 'nf', 'nl', 'no', 'nu', 'nz', 'pe', 'ph', 'pl', 'pm', 'pt', 'pw', 're', 'ro', 'ru', 'sb', 'sc', 'se', 'so', 'sx', 'tc', 'tf', 'tl', 'tv', 'tw', 'us', 'vc', 'vg', 'wf', 'ws', 'yt', 'za', 'net', 'com'];
+           // $scope.availableExtensions.sort();
+
+
+
+            // var defaultExtensions = ['fr', 'io', 'am', 'lu', 'se', 'us', 'me', 're', 'co', 'ro', 'la', 'be', 'li', 'ca'];
+
+            // // activate some
+            // angular.forEach(defaultExtensions, function(ext) {
+            //     $scope.extensions[ext] = true;
+            // });
+
+
+            $scope.defaultExtensions = {
+                A: 'ac ad ae af ag al am ao aq ar as at au aw ax az ba ca ga la ma na pa qa sa ua va za'.split(' '),
+                E: 'ae be de ec ee eg er es et eu ge ie je ke ne pe re ve ye me se'.split(' '),
+                I: 'ai bi ci fi gi id ie il im in io iq ir is it ki li ni si vi'.split(' '),
+                O: 'bo co do fo jo mo no om ro so to ao io'.split(' '),
+                U: 'cu gu hu lu mu nu ru su ug uk us uy uz vu au ua'.split(' '),
+                Y: 'by cy gy ky ly my py sy'.split(' '),
+                CONSONNES: 'bb bd bf bg bh bj bm bn br bs bt bw bz cc cd cf cg ch ck cl cm cn cr cv cw cxcz dj dk dm dz fj fk fm fr gd gf gg gh gl gm gn gp gq gr gs gt gw hk hm hn hr ht jm jp kg kh km kn kp kr kw kz lb lc lk lr ls lt lv mc md mg mh mk ml mm mn mp mq mr ms mt mv mw mx mz nc nf ng nl np nr nz pf pg ph pk pl pm pn pr ps pt pw rs rw sb sc sd sg sh sk sl sm sn sr ss st sv sx sz tc td tf tg th tj tk tl tm tn tr tt tv tw tz vc vg vn wf ws zm zw'.split(' ')
+            }
+
+            $scope.extensionsOrder = ['A', 'E', 'I', 'O', 'U', 'Y', 'CONSONNES'];
 
             $scope.razExtensions = function(selected) {
                 $scope.extensions = {};
-                angular.forEach($scope.availableExtensions, function(ext) {
-                    $scope.extensions[ext] = selected;
+                angular.forEach($scope.defaultExtensions, function(exts, key) {
+                    $scope.extensions[key] = selected;
                 });
             }
             $scope.razExtensions(false);
-
-            var defaultExtensions = ['fr', 'io', 'am', 'lu', 'se', 'us', 'me', 're', 'co', 'ro', 'la', 'be', 'li', 'ca'];
-
-            // activate some
-            angular.forEach(defaultExtensions, function(ext) {
-                $scope.extensions[ext] = true;
-            });
 
             $scope.finder = Finder
             $scope.lettersToStrip = 'e';
@@ -158,9 +185,9 @@
 
             function launchFind() {
                 var selectedExtensions = [];
-                angular.forEach($scope.extensions, function(selected, ext) {
+                angular.forEach($scope.extensions, function(selected, key) {
                     if (selected) {
-                        selectedExtensions.push(ext);
+                        selectedExtensions = selectedExtensions.concat($scope.defaultExtensions[key]);
                     }
                 });
                 var excludedLetters = $scope.excludedLetters.split('');
